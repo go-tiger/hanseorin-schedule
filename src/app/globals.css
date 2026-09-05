@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+/*
+  Schedule Maker — 다크 툴 (단일 테마)
+  스케줄표(먹/한지/도장 빨강)의 세계에서 파생한 팔레트.
+  툴 UI는 항상 다크로 고정. 결과물(미리보기)만 원본 색을 그대로 렌더한다.
+*/
+
+:root {
+  --ground: #16130f; /* 먹색 배경 (붉은기 살짝) */
+  --surface: #1e1a15; /* 패널 */
+  --surface-raised: #29221a; /* 선택/호버 */
+  --line: #362f26; /* 경계선 */
+  --line-strong: #4a4032;
+  --text: #e8e0d2; /* 한지색 */
+  --text-dim: #9a9081;
+  --accent: #c4383f; /* 도장 빨강 */
+  --accent-hover: #d8474e;
+  --accent-fg: #ffffff;
+  --online: #4fa88b; /* 온라인 = 청록 (semantic, accent와 분리) */
+  --offline: #8a7f70;
+  --focus: #d8474e;
+
+  --font-display: var(--font-gowun), 'Nanum Myeongjo', serif;
+  --font-body: var(--font-noto), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-online: var(--online);
+  --color-offline: var(--offline);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  border-color: var(--line);
+}
+
+body {
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
