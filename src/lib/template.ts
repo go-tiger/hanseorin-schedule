@@ -65,6 +65,18 @@ export interface DaySlots {
   offlineLabel: PsdLayerNode | null;
 }
 
+// 주간날짜/시작(끝) 그룹에서 "월 표기" 그룹이 아닌 숫자 텍스트 레이어(=날짜 숫자)를 찾는다.
+// 레이어 이름이 PSD 저장 당시 값("25", "31" 등)이라 내용이 바뀌면 이름도 달라지므로 하드코딩 대신 역할로 찾는다.
+export function findDayNumberLayer(byPath: Map<string, PsdLayerNode>, groupPath: string): PsdLayerNode | undefined {
+  const prefix = groupPath + '/';
+  for (const [path, node] of byPath) {
+    if (!path.startsWith(prefix) || node.text === undefined) continue;
+    if (path.slice(prefix.length).startsWith('월 표기/')) continue;
+    if (isNumeric(node.text)) return node;
+  }
+  return undefined;
+}
+
 // 요일 그룹의 텍스트 레이어를 역할별로 분류
 export function classifyDaySlots(byPath: Map<string, PsdLayerNode>, day: DayKey, mode: 'online' | 'offline'): DaySlots {
   const prefix = dayGroupPath(day, mode) + '/';
@@ -99,14 +111,14 @@ export function classifyDaySlots(byPath: Map<string, PsdLayerNode>, day: DayKey,
 }
 
 export const TEMPLATE = {
-  id: 'test',
-  name: '테스트 템플릿',
+  id: 'hanseorin',
+  name: '한서린 스케줄표',
   psdUrl: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/templates/schedule.psd`,
   psdVersion: '1',
   fonts: FONTS,
   layers: {
-    weekStartDate: '주간날짜/시작/25',
-    weekEndDate: '주간날짜/끝/31',
+    weekStartGroup: '주간날짜/시작',
+    weekEndGroup: '주간날짜/끝',
     weekStartMonthGroup: '주간날짜/시작/월 표기',
     weekEndMonthGroup: '주간날짜/끝/월 표기',
     authorTag: '일러스트칸/팬아트 태그/@ 작가님 닉네임',

@@ -1,6 +1,6 @@
 import { DAY_KEYS } from './elements';
 import type { LoadedPsd, PsdLayerNode } from './psd';
-import { FONT_MAP, TEMPLATE, classifyDaySlots, dayGroupPath } from './template';
+import { FONT_MAP, TEMPLATE, classifyDaySlots, dayGroupPath, findDayNumberLayer } from './template';
 import type { ScheduleData } from './schedule';
 import { dayTimeTokens, dayTitleText, weekDayNumbers, weekMonthRange } from './schedule';
 
@@ -50,8 +50,10 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
       if (n) overridden.add(n.path);
     }
   }
-  overridden.add(TEMPLATE.layers.weekStartDate);
-  overridden.add(TEMPLATE.layers.weekEndDate);
+  const weekStartNode = findDayNumberLayer(psd.byPath, TEMPLATE.layers.weekStartGroup);
+  const weekEndNode = findDayNumberLayer(psd.byPath, TEMPLATE.layers.weekEndGroup);
+  if (weekStartNode) overridden.add(weekStartNode.path);
+  if (weekEndNode) overridden.add(weekEndNode.path);
   if (data.authorTag.trim()) overridden.add(TEMPLATE.layers.authorTag);
 
   const hasUserImage = !!(illust && data.imageDataUrl);
@@ -86,8 +88,8 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
     }
   }
 
-  drawText(ctx, psd.byPath.get(TEMPLATE.layers.weekStartDate), nums.mon, debug);
-  drawText(ctx, psd.byPath.get(TEMPLATE.layers.weekEndDate), nums.sun, debug);
+  drawText(ctx, weekStartNode, nums.mon, debug);
+  drawText(ctx, weekEndNode, nums.sun, debug);
   if (data.authorTag.trim()) {
     drawText(ctx, psd.byPath.get(TEMPLATE.layers.authorTag), `@ ${data.authorTag.trim()}`, debug);
   }
