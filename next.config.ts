@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
+const basePath = "/hanseorin-schedule";
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "export",
+  basePath,
+  assetPrefix: basePath,
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;

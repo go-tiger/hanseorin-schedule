@@ -101,7 +101,7 @@ export function classifyDaySlots(byPath: Map<string, PsdLayerNode>, day: DayKey,
 export const TEMPLATE = {
   id: 'test',
   name: '테스트 템플릿',
-  psdUrl: '/templates/test.psd',
+  psdUrl: process.env.NEXT_PUBLIC_PSD_URL ?? '/templates/schedule.psd',
   psdVersion: '1',
   fonts: FONTS,
   layers: {
