@@ -30,9 +30,11 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      - run: mkdir -p public/templates && curl -fsSL "$PSD_URL" -o public/templates/schedule.psd
         env:
-          NEXT_PUBLIC_PSD_URL: ${{ secrets.NEXT_PUBLIC_PSD_URL }}
+          PSD_URL: ${{ secrets.PSD_SOURCE_URL }}
+
+      - run: npm run build
 
       - uses: actions/configure-pages@v6
 
