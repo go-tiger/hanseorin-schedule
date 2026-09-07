@@ -70,6 +70,34 @@ export function emptySchedule(): ScheduleData {
   };
 }
 
+// --- 로컬 스토리지 ---
+
+const STORAGE_KEY = 'schedule-maker:data';
+
+export function loadSchedule(): ScheduleData {
+  if (typeof window === 'undefined') return emptySchedule();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return emptySchedule();
+    const parsed = JSON.parse(raw) as Partial<ScheduleData>;
+    const base = emptySchedule();
+    const days = {} as Record<DayKey, DayData>;
+    for (const k of DAY_KEYS) days[k] = { ...emptyDay(), ...parsed.days?.[k] };
+    return { ...base, ...parsed, days };
+  } catch {
+    return emptySchedule();
+  }
+}
+
+export function saveSchedule(data: ScheduleData): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // 용량 초과 등은 무시
+  }
+}
+
 // --- 렌더용 파생 값 ---
 
 /** 제목 표기: 2회면 "제목1 / 제목2" (세로 3줄) */

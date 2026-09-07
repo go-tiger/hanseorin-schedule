@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ExplorerPanel } from '@/components/ExplorerPanel';
 import { EditFormPanel } from '@/components/EditFormPanel';
 import { CanvasPreview } from '@/components/CanvasPreview';
 import { ResizableSidebar } from '@/components/ResizableSidebar';
-import { emptySchedule, type ScheduleData } from '@/lib/schedule';
+import { emptySchedule, loadSchedule, saveSchedule, type ScheduleData } from '@/lib/schedule';
 
 // VSCode 스타일 3구역
 //  - 좌측 탐색기: 스케줄 목록 + 요소 트리
@@ -14,6 +14,17 @@ import { emptySchedule, type ScheduleData } from '@/lib/schedule';
 export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [data, setData] = useState<ScheduleData>(emptySchedule);
+  const [hydrated, setHydrated] = useState(false);
+
+  // 마운트 후 복원 (hydration 불일치 방지)
+  useEffect(() => {
+    setData(loadSchedule());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) saveSchedule(data);
+  }, [data, hydrated]);
 
   return (
     <div className='flex h-screen overflow-hidden bg-ground font-body text-text'>
