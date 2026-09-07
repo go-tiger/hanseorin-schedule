@@ -98,6 +98,15 @@ export function saveSchedule(data: ScheduleData): void {
   }
 }
 
+export function clearSchedule(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // 무시
+  }
+}
+
 // --- 렌더용 파생 값 ---
 
 /** 제목 표기: 2회면 "제목1 / 제목2" (세로 3줄) */

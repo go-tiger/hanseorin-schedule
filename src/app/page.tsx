@@ -5,7 +5,7 @@ import { ExplorerPanel } from '@/components/ExplorerPanel';
 import { EditFormPanel } from '@/components/EditFormPanel';
 import { CanvasPreview } from '@/components/CanvasPreview';
 import { ResizableSidebar } from '@/components/ResizableSidebar';
-import { emptySchedule, loadSchedule, saveSchedule, type ScheduleData } from '@/lib/schedule';
+import { clearSchedule, emptySchedule, loadSchedule, saveSchedule, type ScheduleData } from '@/lib/schedule';
 
 // VSCode 스타일 3구역
 //  - 좌측 탐색기: 스케줄 목록 + 요소 트리
@@ -26,10 +26,16 @@ export default function Home() {
     if (hydrated) saveSchedule(data);
   }, [data, hydrated]);
 
+  function reset() {
+    clearSchedule();
+    setData(emptySchedule());
+    setSelectedId(null);
+  }
+
   return (
     <div className='flex h-screen overflow-hidden bg-ground font-body text-text'>
       <ResizableSidebar>
-        <ExplorerPanel selectedId={selectedId} onSelect={setSelectedId} />
+        <ExplorerPanel selectedId={selectedId} onSelect={setSelectedId} onReset={reset} />
       </ResizableSidebar>
 
       <div className='flex flex-1 flex-col overflow-hidden'>
