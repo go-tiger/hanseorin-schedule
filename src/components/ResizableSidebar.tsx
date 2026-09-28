@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const MIN_W = 160;
+const MIN_W = 120;
 const MAX_W = 400;
 const STORAGE_KEY = 'schedule-maker:sidebar-width';
 

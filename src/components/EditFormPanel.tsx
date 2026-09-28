@@ -2,16 +2,24 @@
 
 import { DAY_HANJA, ELEMENT_TREE, type DayKey } from '@/lib/elements';
 import type { DayData, ScheduleData } from '@/lib/schedule';
+import type { DayFontSizes } from '@/lib/template';
 
 interface Props {
   selectedId: string | null;
   data: ScheduleData;
   onChange: (next: ScheduleData) => void;
+  /** PSD 원본 폰트 크기. 로딩 전이면 null */
+  fontSizes: Record<DayKey, DayFontSizes> | null;
+}
+
+// 크기 입력칸의 placeholder: PSD 원본 크기를 그대로 보여준다 (로딩 전이면 '원본')
+function sizeHint(v?: number): string {
+  return v ? String(Math.round(v)) : '원본';
 }
 
 // 하단 패널: 선택한 요소의 편집 폼.
 // 필드를 가로로 배치, 높이는 내용에 맞춤 (스크롤 없음).
-export function EditFormPanel({ selectedId, data, onChange }: Props) {
+export function EditFormPanel({ selectedId, data, onChange, fontSizes }: Props) {
   const node = ELEMENT_TREE.find(n => n.id === selectedId);
 
   if (!node) {
@@ -75,7 +83,7 @@ export function EditFormPanel({ selectedId, data, onChange }: Props) {
                 onClick={() => patchDay(day, { twice: !dayData.twice })}
                 className='mb-1.5 rounded border border-line bg-surface-raised px-2.5 py-1.5 text-[13px] text-text transition-colors hover:border-accent hover:text-accent'
               >
-                {dayData.twice ? '- 일정 삭제' : '+ 일정 추가'}
+                {dayData.twice ? '- 일정' : '+ 일정'}
               </button>
               <Field
                 label='방송 제목'
@@ -84,11 +92,20 @@ export function EditFormPanel({ selectedId, data, onChange }: Props) {
                 value={dayData.title}
                 onChange={v => patchDay(day, { title: v })}
               />
+              <Field
+                label='크기'
+                placeholder={sizeHint(fontSizes?.[day].title)}
+                className='w-12'
+                mono
+                strongPlaceholder
+                value={dayData.titleSize}
+                onChange={v => patchDay(day, { titleSize: v })}
+              />
             </div>
 
             <div className='flex flex-wrap items-end gap-3.5'>
               <div aria-hidden className='invisible rounded border px-2.5 py-1.5 text-[13px]'>
-                - 일정 삭제
+                - 일정
               </div>
               <Field
                 label='방송 제목 2'
@@ -98,19 +115,32 @@ export function EditFormPanel({ selectedId, data, onChange }: Props) {
                 onChange={v => patchDay(day, { title2: v })}
                 disabled={!dayData.twice}
               />
+              {/* 제목 크기는 두 줄 공통이라 빈 칸으로 정렬만 맞춘다 */}
+              <div aria-hidden className='invisible w-12' />
             </div>
           </div>
 
-          <label className='flex min-w-56 flex-1 flex-col gap-1'>
-            <span className='text-[10px] font-semibold uppercase tracking-widest text-text-dim'>세부 스케줄</span>
-            <textarea
-              placeholder='세부 스케줄'
-              rows={4}
-              value={dayData.desc}
-              onChange={e => patchDay(day, { desc: e.target.value })}
-              className='w-full resize-none rounded border border-line bg-surface-raised px-2.5 py-1.5 text-[13px] text-text placeholder:text-text-dim/50 focus:border-accent focus:outline-none'
+          <div className='flex min-w-56 flex-1 items-start gap-3.5'>
+            <label className='flex min-w-40 flex-1 flex-col gap-1'>
+              <span className='text-[10px] font-semibold uppercase tracking-widest text-text-dim'>세부 스케줄</span>
+              <textarea
+                placeholder='세부 스케줄'
+                rows={4}
+                value={dayData.desc}
+                onChange={e => patchDay(day, { desc: e.target.value })}
+                className='w-full resize-none rounded border border-line bg-surface-raised px-2.5 py-1.5 text-[13px] text-text placeholder:text-text-dim/50 focus:border-accent focus:outline-none'
+              />
+            </label>
+            <Field
+              label='크기'
+              placeholder={sizeHint(fontSizes?.[day].desc)}
+              className='w-12'
+              mono
+              strongPlaceholder
+              value={dayData.descSize}
+              onChange={v => patchDay(day, { descSize: v })}
             />
-          </label>
+          </div>
 
           <div className='flex flex-col gap-3'>
             <Field
@@ -221,6 +251,7 @@ function Field({
   value,
   onChange,
   disabled = false,
+  strongPlaceholder = false,
 }: {
   label: string;
   placeholder?: string;
@@ -230,6 +261,8 @@ function Field({
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  /** placeholder가 힌트가 아니라 현재 적용값일 때 (폰트 크기 등) 진하게 */
+  strongPlaceholder?: boolean;
 }) {
   return (
     <label className={`flex flex-col gap-1 ${className}`}>
@@ -240,9 +273,9 @@ function Field({
         value={value}
         onChange={e => onChange(e.target.value)}
         disabled={disabled}
-        className={`w-full rounded border border-line bg-surface-raised px-2.5 py-1.5 text-[13px] text-text placeholder:text-text-dim/50 focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-          mono ? 'font-mono tabular-nums' : ''
-        }`}
+        className={`w-full rounded border border-line bg-surface-raised px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+          strongPlaceholder ? 'placeholder:text-text-dim' : 'placeholder:text-text-dim/50'
+        } ${mono ? 'font-mono tabular-nums' : ''}`}
       />
     </label>
   );

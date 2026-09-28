@@ -12,6 +12,12 @@ const DESC_PLACEHOLDER = '세부 스케줄을 작성해주세요.';
 const TITLE_WRAP_WIDTH = 246;
 const DESC_WRAP_WIDTH = 350;
 
+// 사용자가 입력한 폰트 크기. 비었거나 잘못된 값이면 undefined(=PSD 원본 유지).
+function parseSize(v: string): number | undefined {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
 interface RenderOpts {
   ctx: CanvasRenderingContext2D;
   psd: LoadedPsd;
@@ -83,8 +89,12 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
     if (slots.date) drawText(ctx, slots.date, dateStr, debug);
 
     if (mode === 'online') {
-      if (slots.title) drawText(ctx, slots.title, dayTitleText(dd) || TITLE_PLACEHOLDER, debug, TITLE_WRAP_WIDTH);
-      if (slots.desc) drawText(ctx, slots.desc, dd.desc || DESC_PLACEHOLDER, debug, DESC_WRAP_WIDTH);
+      if (slots.title) {
+        drawText(ctx, slots.title, dayTitleText(dd) || TITLE_PLACEHOLDER, debug, TITLE_WRAP_WIDTH, parseSize(dd.titleSize));
+      }
+      if (slots.desc) {
+        drawText(ctx, slots.desc, dd.desc || DESC_PLACEHOLDER, debug, DESC_WRAP_WIDTH, parseSize(dd.descSize));
+      }
       if (slots.time) drawVertical(ctx, slots.time, dayTimeTokens(dd), debug, 4);
     } else {
       if (slots.offlineLabel) drawVertical(ctx, slots.offlineLabel, [...'오프라인'], debug);
@@ -151,13 +161,18 @@ function paintNode(ctx: CanvasRenderingContext2D, node: PsdLayerNode, pc: PaintC
   ctx.drawImage(node.canvas, node.bounds.left, node.bounds.top, node.bounds.width, node.bounds.height);
 }
 
-function specFrom(node: PsdLayerNode) {
+// sizeOverride: 사용자가 지정한 폰트 크기(PSD 단위). 없으면 레이어 원본 크기.
+function specFrom(node: PsdLayerNode, sizeOverride?: number) {
   const tr = node.transform ?? [1, 0, 0, 1, node.bounds.left, node.bounds.top];
   const [sx, , , sy, tx, ty] = tr;
   const scale = (sx + sy) / 2;
-  const fontPx = (node.fontSize ?? 40) * scale;
+  const baseSize = node.fontSize ?? 40;
+  const size = sizeOverride ?? baseSize;
+  const fontPx = size * scale;
   // PSD의 명시적 leading이 있으면 그걸(스케일 적용) 줄간격으로 사용.
-  const lineStep = node.leading ? node.leading * scale : fontPx * 1.2;
+  // 크기를 바꾸면 줄간격도 같은 비율로 따라가야 줄이 겹치지 않는다.
+  const baseStep = node.leading ? node.leading * scale : baseSize * scale * 1.2;
+  const lineStep = baseStep * (size / baseSize);
   return {
     x: tx,
     y: ty,
@@ -193,9 +208,10 @@ function drawText(
   text: string,
   debug?: boolean,
   wrapWidth?: number,
+  sizeOverride?: number,
 ) {
   if (!node) return;
-  const s = specFrom(node);
+  const s = specFrom(node, sizeOverride);
   const value = text;
 
   ctx.save();

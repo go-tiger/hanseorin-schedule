@@ -6,6 +6,8 @@ import { EditFormPanel } from '@/components/EditFormPanel';
 import { CanvasPreview } from '@/components/CanvasPreview';
 import { ResizableSidebar } from '@/components/ResizableSidebar';
 import { clearSchedule, emptySchedule, loadSchedule, saveSchedule, type ScheduleData } from '@/lib/schedule';
+import type { DayFontSizes } from '@/lib/template';
+import type { DayKey } from '@/lib/elements';
 
 // VSCode 스타일 3구역
 //  - 좌측 탐색기: 스케줄 목록 + 요소 트리
@@ -15,6 +17,8 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [data, setData] = useState<ScheduleData>(emptySchedule);
   const [hydrated, setHydrated] = useState(false);
+  // PSD 원본 폰트 크기 (편집 폼에서 기본값으로 보여준다)
+  const [fontSizes, setFontSizes] = useState<Record<DayKey, DayFontSizes> | null>(null);
 
   // 정적 export라 localStorage는 마운트 후에만 읽을 수 있다 (hydration 불일치 방지).
   useEffect(() => {
@@ -42,12 +46,12 @@ export default function Home() {
       <div className='flex flex-1 flex-col overflow-hidden'>
         <main className='min-h-0 flex-1 overflow-hidden bg-ground p-5'>
           <div className='mx-auto flex h-full max-w-5xl items-center justify-center'>
-            <CanvasPreview data={data} />
+            <CanvasPreview data={data} onFontSizes={setFontSizes} />
           </div>
         </main>
 
         <div className='shrink-0 border-t border-line bg-surface'>
-          <EditFormPanel selectedId={selectedId} data={data} onChange={setData} />
+          <EditFormPanel selectedId={selectedId} data={data} onChange={setData} fontSizes={fontSizes} />
         </div>
       </div>
     </div>

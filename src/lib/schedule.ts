@@ -17,6 +17,10 @@ export interface DayData {
   // 2회차 (twice=true일 때만 사용, 시 단위만)
   title2: string;
   hour2: string;
+
+  /** 폰트 크기 (pt). 빈 문자열이면 PSD 원본 크기 사용 */
+  titleSize: string;
+  descSize: string;
 }
 
 export interface ScheduleData {
@@ -39,6 +43,8 @@ export function emptyDay(): DayData {
     minute: '',
     title2: '',
     hour2: '',
+    titleSize: '',
+    descSize: '',
   };
 }
 

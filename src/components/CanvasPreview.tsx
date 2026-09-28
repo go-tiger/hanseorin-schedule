@@ -4,14 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 import { loadPsd, type LoadedPsd } from '@/lib/psd';
 import { ensureFontsLoaded } from '@/lib/fonts';
 import { renderSchedule } from '@/lib/render';
-import { TEMPLATE } from '@/lib/template';
+import { TEMPLATE, readDayFontSizes, type DayFontSizes } from '@/lib/template';
 import { weekLabel, type ScheduleData } from '@/lib/schedule';
+import type { DayKey } from '@/lib/elements';
 
 interface Props {
   data: ScheduleData;
+  /** PSD 파싱 후 요일별 원본 폰트 크기를 상위로 전달 (편집 폼의 기본값 표시용) */
+  onFontSizes?: (sizes: Record<DayKey, DayFontSizes>) => void;
 }
 
-export function CanvasPreview({ data }: Props) {
+export function CanvasPreview({ data, onFontSizes }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const psdRef = useRef<LoadedPsd | null>(null);
@@ -22,6 +25,11 @@ export function CanvasPreview({ data }: Props) {
   const [downloading, setDownloading] = useState(false);
 
   const draw = useRef(() => {});
+  // PSD 로드는 마운트 시 한 번만 하므로 콜백은 ref로 참조한다.
+  const onFontSizesRef = useRef(onFontSizes);
+  useEffect(() => {
+    onFontSizesRef.current = onFontSizes;
+  }, [onFontSizes]);
 
   useEffect(() => {
     draw.current = () => {
@@ -73,6 +81,7 @@ export function CanvasPreview({ data }: Props) {
         psdRef.current = psd;
         setStatus('');
         setReady(true);
+        onFontSizesRef.current?.(readDayFontSizes(psd.byPath));
       } catch (e) {
         if (!disposed) setStatus(String(e instanceof Error ? e.message : e));
       }

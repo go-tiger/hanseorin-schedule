@@ -110,6 +110,22 @@ export function classifyDaySlots(byPath: Map<string, PsdLayerNode>, day: DayKey,
   return slots;
 }
 
+/** 요일별 제목/세부 슬롯의 PSD 원본 폰트 크기 (폼에 기본값으로 표시) */
+export interface DayFontSizes {
+  title?: number;
+  desc?: number;
+}
+
+export function readDayFontSizes(byPath: Map<string, PsdLayerNode>): Record<DayKey, DayFontSizes> {
+  const out = {} as Record<DayKey, DayFontSizes>;
+  for (const day of DAY_KEYS) {
+    // 크기 조절은 온라인 카드의 제목/세부에만 있으므로 온라인 그룹 기준.
+    const slots = classifyDaySlots(byPath, day, 'online');
+    out[day] = { title: slots.title?.fontSize, desc: slots.desc?.fontSize };
+  }
+  return out;
+}
+
 export const TEMPLATE = {
   id: 'hanseorin',
   name: '한서린 스케줄표',
