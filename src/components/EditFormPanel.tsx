@@ -17,6 +17,20 @@ function sizeHint(v?: number): string {
   return v ? String(Math.round(v)) : '원본';
 }
 
+// 미리보기 드래그로 바뀐 값들 (폰트 크기는 폼에서 지우면 되므로 제외)
+const RESET_LAYOUT: Partial<DayData> = {
+  titleDx: 0,
+  titleDy: 0,
+  descDx: 0,
+  descDy: 0,
+  titleWidth: 0,
+  descWidth: 0,
+};
+
+function isMoved(d: DayData): boolean {
+  return !!(d.titleDx || d.titleDy || d.descDx || d.descDy || d.titleWidth || d.descWidth);
+}
+
 // 하단 패널: 선택한 요소의 편집 폼.
 // 필드를 가로로 배치, 높이는 내용에 맞춤 (스크롤 없음).
 export function EditFormPanel({ selectedId, data, onChange, fontSizes }: Props) {
@@ -60,17 +74,29 @@ export function EditFormPanel({ selectedId, data, onChange, fontSizes }: Props) 
           )}
         </div>
         {node.kind === 'day' && day && dayData && (
-          <label className='flex items-center gap-1.5 text-[13px] text-text-dim'>
-            날짜
-            <input
-              type='text'
-              placeholder='자동 계산'
-              value={dayData.date ?? ''}
-              onChange={e => patchDay(day, { date: e.target.value })}
-              disabled={data.startDateTouched}
-              className='w-24 rounded border border-line bg-surface-raised px-2 py-1 font-mono text-[13px] tabular-nums text-text placeholder:text-text-dim/50 focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
-            />
-          </label>
+          <div className='flex items-center gap-3.5'>
+            {isMoved(dayData) && (
+              <button
+                type='button'
+                onClick={() => patchDay(day, RESET_LAYOUT)}
+                title='미리보기에서 끌어 옮긴 위치와 폭을 원래대로'
+                className='rounded border border-line bg-surface-raised px-2 py-1 text-[13px] text-text-dim transition-colors hover:border-accent hover:text-accent'
+              >
+                ↺ 위치 초기화
+              </button>
+            )}
+            <label className='flex items-center gap-1.5 text-[13px] text-text-dim'>
+              날짜
+              <input
+                type='text'
+                placeholder='자동 계산'
+                value={dayData.date ?? ''}
+                onChange={e => patchDay(day, { date: e.target.value })}
+                disabled={data.startDateTouched}
+                className='w-24 rounded border border-line bg-surface-raised px-2 py-1 font-mono text-[13px] tabular-nums text-text placeholder:text-text-dim/50 focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+              />
+            </label>
+          </div>
         )}
       </div>
 

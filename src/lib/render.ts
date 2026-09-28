@@ -1,4 +1,4 @@
-import { DAY_KEYS } from './elements';
+import { DAY_KEYS, type DayKey } from './elements';
 import type { LoadedPsd, PsdLayerNode } from './psd';
 import { FONT_MAP, TEMPLATE, classifyDaySlots, dayGroupPath, findDayNumberLayer } from './template';
 import type { ScheduleData } from './schedule';
@@ -11,6 +11,20 @@ const DESC_PLACEHOLDER = '세부 스케줄을 작성해주세요.';
 // 원본 텍스트 길이에 따라 제각각이라 카드 공통값을 고정한다.
 const TITLE_WRAP_WIDTH = 246;
 const DESC_WRAP_WIDTH = 350;
+
+export interface Box {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** 미리보기에서 클릭/드래그할 수 있는 텍스트 슬롯 */
+export interface HitSlot {
+  day: DayKey;
+  field: 'title' | 'desc';
+  box: Box;
+}
 
 // 사용자가 입력한 폰트 크기. 비었거나 잘못된 값이면 undefined(=PSD 원본 유지).
 function parseSize(v: string): number | undefined {
@@ -25,9 +39,12 @@ interface RenderOpts {
   illust?: HTMLImageElement | null;
   scale: number;
   debug?: boolean;
+  /** 선택된 슬롯 (테두리와 크기 핸들을 그린다) */
+  selected?: { day: DayKey; field: 'title' | 'desc' } | null;
 }
 
-export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderOpts) {
+/** 그린 뒤 클릭 가능한 슬롯 목록을 돌려준다 (히트 테스트용) */
+export function renderSchedule({ ctx, psd, data, illust, scale, debug, selected }: RenderOpts): HitSlot[] {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.clearRect(0, 0, psd.width, psd.height);
 
@@ -83,17 +100,32 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
   }
 
   // 3) 사용자 텍스트
+  const hits: HitSlot[] = [];
   for (const { day, mode, slots } of daySlots) {
     const dd = data.days[day];
     const dateStr = dd.date?.trim() || nums[day];
-    if (slots.date) drawText(ctx, slots.date, dateStr, debug);
+    if (slots.date) drawText(ctx, slots.date, dateStr, { debug });
 
     if (mode === 'online') {
       if (slots.title) {
-        drawText(ctx, slots.title, dayTitleText(dd) || TITLE_PLACEHOLDER, debug, TITLE_WRAP_WIDTH, parseSize(dd.titleSize));
+        const box = drawText(ctx, slots.title, dayTitleText(dd) || TITLE_PLACEHOLDER, {
+          debug,
+          wrapWidth: dd.titleWidth || TITLE_WRAP_WIDTH,
+          sizeOverride: parseSize(dd.titleSize),
+          dx: dd.titleDx,
+          dy: dd.titleDy,
+        });
+        if (box) hits.push({ day, field: 'title', box });
       }
       if (slots.desc) {
-        drawText(ctx, slots.desc, dd.desc || DESC_PLACEHOLDER, debug, DESC_WRAP_WIDTH, parseSize(dd.descSize));
+        const box = drawText(ctx, slots.desc, dd.desc || DESC_PLACEHOLDER, {
+          debug,
+          wrapWidth: dd.descWidth || DESC_WRAP_WIDTH,
+          sizeOverride: parseSize(dd.descSize),
+          dx: dd.descDx,
+          dy: dd.descDy,
+        });
+        if (box) hits.push({ day, field: 'desc', box });
       }
       if (slots.time) drawVertical(ctx, slots.time, dayTimeTokens(dd), debug, 4);
     } else {
@@ -101,11 +133,18 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
     }
   }
 
-  drawText(ctx, weekStartNode, nums.mon, debug);
-  drawText(ctx, weekEndNode, nums.sun, debug);
+  drawText(ctx, weekStartNode, nums.mon, { debug });
+  drawText(ctx, weekEndNode, nums.sun, { debug });
   if (showAuthorTag && data.authorTag.trim()) {
-    drawText(ctx, psd.byPath.get(TEMPLATE.layers.authorTag), `@ ${data.authorTag.trim()}`, debug);
+    drawText(ctx, psd.byPath.get(TEMPLATE.layers.authorTag), `@ ${data.authorTag.trim()}`, { debug });
   }
+
+  if (selected) {
+    const hit = hits.find(h => h.day === selected.day && h.field === selected.field);
+    if (hit) drawSelection(ctx, hit.box, scale);
+  }
+
+  return hits;
 }
 
 interface PaintCtx {
@@ -202,17 +241,26 @@ function wrapLine(ctx: CanvasRenderingContext2D, line: string, maxWidth: number)
   return out;
 }
 
+interface DrawTextOpts {
+  debug?: boolean;
+  wrapWidth?: number;
+  sizeOverride?: number;
+  /** 사용자가 끌어 옮긴 오프셋 (PSD px) */
+  dx?: number;
+  dy?: number;
+}
+
 function drawText(
   ctx: CanvasRenderingContext2D,
   node: PsdLayerNode | undefined,
   text: string,
-  debug?: boolean,
-  wrapWidth?: number,
-  sizeOverride?: number,
-) {
-  if (!node) return;
+  opts: DrawTextOpts = {},
+): Box | null {
+  if (!node) return null;
+  const { debug, wrapWidth, sizeOverride, dx = 0, dy = 0 } = opts;
   const s = specFrom(node, sizeOverride);
-  const value = text;
+  const x = s.x + dx;
+  const y = s.y + dy;
 
   ctx.save();
   ctx.font = `${s.fontPx}px "${s.family}", sans-serif`;
@@ -220,19 +268,24 @@ function drawText(
   ctx.textAlign = s.align;
   ctx.textBaseline = 'alphabetic';
 
-  const rawLines = String(value).split(/\r?\n/);
+  const rawLines = String(text).split(/\r?\n/);
   const lines = wrapWidth ? rawLines.flatMap(line => wrapLine(ctx, line, wrapWidth)) : rawLines;
-  lines.forEach((line, i) => ctx.fillText(line, s.x, s.y + i * s.lineStep));
+  lines.forEach((line, i) => ctx.fillText(line, x, y + i * s.lineStep));
 
-  if (debug) {
-    const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-    const boxLeft = s.align === 'center' ? s.x - maxWidth / 2 : s.align === 'right' ? s.x - maxWidth : s.x;
-    // fontPx의 상단 여백(어센더) 보정: 첫 줄 baseline보다 위로 fontPx 정도, 마지막 줄 아래로 약간의 디센더.
-    const boxTop = s.y - s.fontPx * 0.8;
-    const boxHeight = (lines.length - 1) * s.lineStep + s.fontPx * 1.0;
-    markPoint(ctx, s.x, s.y, { left: boxLeft, top: boxTop, width: maxWidth, height: boxHeight });
-  }
+  // 히트 테스트/선택 표시에 쓸 경계 박스.
+  // 줄바꿈 폭이 지정된 슬롯은 실제 글자 폭이 아니라 그 폭을 기준으로 잡아야
+  // 텍스트가 짧아도 박스가 흔들리지 않는다.
+  const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width), 0);
+  const boxWidth = wrapWidth || textWidth;
+  const boxLeft = s.align === 'center' ? x - boxWidth / 2 : s.align === 'right' ? x - boxWidth : x;
+  // fontPx의 상단 여백(어센더) 보정: 첫 줄 baseline보다 위로 fontPx 정도, 마지막 줄 아래로 약간의 디센더.
+  const boxTop = y - s.fontPx * 0.8;
+  const boxHeight = (lines.length - 1) * s.lineStep + s.fontPx * 1.0;
+  const box: Box = { left: boxLeft, top: boxTop, width: boxWidth, height: boxHeight };
+
+  if (debug) markPoint(ctx, x, y, box);
   ctx.restore();
+  return box;
 }
 
 function drawVertical(
@@ -267,6 +320,49 @@ function drawVertical(
     const firstLineY = isVerticalCenter ? startY - s.fontPx / 2 : startY - s.fontPx * 0.8;
     const boxHeight = (tokens.length - 1) * step + s.fontPx * 1.0;
     markPoint(ctx, s.x, s.y, { left: s.x - maxWidth / 2, top: firstLineY, width: maxWidth, height: boxHeight });
+  }
+  ctx.restore();
+}
+
+/** 선택 테두리 크기 핸들의 한 변 길이 (화면 px) */
+export const HANDLE_SIZE = 10;
+
+/** 좌우 가운데에 폭 조절 핸들 (줄바꿈 폭만 바꾸므로 세로 핸들은 두지 않는다) */
+export function handleCenters(box: Box): Array<{ x: number; y: number; edge: 'left' | 'right' }> {
+  const midY = box.top + box.height / 2;
+  return [
+    { x: box.left, y: midY, edge: 'left' },
+    { x: box.left + box.width, y: midY, edge: 'right' },
+  ];
+}
+
+/** 점이 박스 안에 있는지 */
+export function hitTest(box: Box, x: number, y: number): boolean {
+  return x >= box.left && x <= box.left + box.width && y >= box.top && y <= box.top + box.height;
+}
+
+/** 점이 어느 폭 조절 핸들 위인지 (아니면 null). tol은 PSD px 단위 허용 오차. */
+export function hitHandle(box: Box, x: number, y: number, tol: number): 'left' | 'right' | null {
+  for (const c of handleCenters(box)) {
+    if (Math.abs(x - c.x) <= tol && Math.abs(y - c.y) <= tol) return c.edge;
+  }
+  return null;
+}
+
+function drawSelection(ctx: CanvasRenderingContext2D, box: Box, scale: number) {
+  // 캔버스가 scale로 그려지므로 선 두께/핸들은 역으로 나눠 화면상 크기를 고정한다.
+  const px = 1 / scale;
+  ctx.save();
+  ctx.strokeStyle = '#4fa88b';
+  ctx.lineWidth = 2 * px;
+  ctx.setLineDash([6 * px, 4 * px]);
+  ctx.strokeRect(box.left, box.top, box.width, box.height);
+
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#4fa88b';
+  const h = HANDLE_SIZE * px;
+  for (const c of handleCenters(box)) {
+    ctx.fillRect(c.x - h / 2, c.y - h / 2, h, h);
   }
   ctx.restore();
 }

@@ -5,7 +5,14 @@ import { ExplorerPanel } from '@/components/ExplorerPanel';
 import { EditFormPanel } from '@/components/EditFormPanel';
 import { CanvasPreview } from '@/components/CanvasPreview';
 import { ResizableSidebar } from '@/components/ResizableSidebar';
-import { clearSchedule, emptySchedule, loadSchedule, saveSchedule, type ScheduleData } from '@/lib/schedule';
+import {
+  clearSchedule,
+  emptySchedule,
+  loadSchedule,
+  saveSchedule,
+  type DayData,
+  type ScheduleData,
+} from '@/lib/schedule';
 import type { DayFontSizes } from '@/lib/template';
 import type { DayKey } from '@/lib/elements';
 
@@ -31,6 +38,11 @@ export default function Home() {
     if (hydrated) saveSchedule(data);
   }, [data, hydrated]);
 
+  // 미리보기에서 드래그한 결과를 반영
+  function patchDay(day: DayKey, patch: Partial<DayData>) {
+    setData(d => ({ ...d, days: { ...d.days, [day]: { ...d.days[day], ...patch } } }));
+  }
+
   function reset() {
     clearSchedule();
     setData(emptySchedule());
@@ -46,7 +58,12 @@ export default function Home() {
       <div className='flex flex-1 flex-col overflow-hidden'>
         <main className='min-h-0 flex-1 overflow-hidden bg-ground p-5'>
           <div className='mx-auto flex h-full max-w-5xl items-center justify-center'>
-            <CanvasPreview data={data} onFontSizes={setFontSizes} />
+            <CanvasPreview
+              data={data}
+              onFontSizes={setFontSizes}
+              onPatchDay={patchDay}
+              onSelectDay={day => setSelectedId(`day:${day}`)}
+            />
           </div>
         </main>
 

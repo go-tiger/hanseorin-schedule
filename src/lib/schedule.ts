@@ -21,6 +21,16 @@ export interface DayData {
   /** 폰트 크기 (pt). 빈 문자열이면 PSD 원본 크기 사용 */
   titleSize: string;
   descSize: string;
+
+  /** 미리보기에서 끌어 옮긴 위치 오프셋 (PSD px, 0이면 원본 위치) */
+  titleDx: number;
+  titleDy: number;
+  descDx: number;
+  descDy: number;
+
+  /** 줄바꿈 폭 (PSD px). 0이면 기본 폭 사용 */
+  titleWidth: number;
+  descWidth: number;
 }
 
 export interface ScheduleData {
@@ -45,6 +55,12 @@ export function emptyDay(): DayData {
     hour2: '',
     titleSize: '',
     descSize: '',
+    titleDx: 0,
+    titleDy: 0,
+    descDx: 0,
+    descDy: 0,
+    titleWidth: 0,
+    descWidth: 0,
   };
 }
 
