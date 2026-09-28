@@ -43,7 +43,7 @@ export function EditFormPanel({ selectedId, data, onChange }: Props) {
             <label className='ml-2 flex items-center gap-1.5 text-[13px] text-text-dim'>
               <input
                 type='checkbox'
-                className='accent-[var(--accent)]'
+                className='accent-accent'
                 checked={!dayData.online}
                 onChange={e => patchDay(day, { online: !e.target.checked })}
               />
@@ -102,7 +102,7 @@ export function EditFormPanel({ selectedId, data, onChange }: Props) {
           </div>
 
           <label className='flex min-w-56 flex-1 flex-col gap-1'>
-            <span className='text-[10px] font-semibold uppercase tracking-[0.1em] text-text-dim'>세부 스케줄</span>
+            <span className='text-[10px] font-semibold uppercase tracking-widest text-text-dim'>세부 스케줄</span>
             <textarea
               placeholder='세부 스케줄'
               rows={4}
@@ -160,21 +160,37 @@ export function EditFormPanel({ selectedId, data, onChange }: Props) {
 
       {node.kind === 'illustration' && (
         <div className='flex flex-wrap items-end gap-3.5'>
-          <label className='flex min-w-64 flex-1 flex-col gap-1'>
-            <span className='text-[10px] font-semibold uppercase tracking-[0.1em] text-text-dim'>작가 닉네임</span>
-            <div className='flex items-center gap-1 rounded border border-line bg-surface-raised px-2.5 py-1.5 focus-within:border-accent'>
+          <div className='flex min-w-64 flex-1 flex-col gap-1'>
+            <div className='flex items-center gap-2.5'>
+              <span className='text-[10px] font-semibold uppercase tracking-widest text-text-dim'>작가 닉네임</span>
+              <label className='flex items-center gap-1.5 text-[13px] text-text-dim'>
+                <input
+                  type='checkbox'
+                  className='accent-accent'
+                  checked={!data.authorTagEnabled}
+                  onChange={e => onChange({ ...data, authorTagEnabled: !e.target.checked })}
+                />
+                태그 숨김
+              </label>
+            </div>
+            <div
+              className={`flex items-center gap-1 rounded border border-line bg-surface-raised px-2.5 py-1.5 focus-within:border-accent ${
+                data.authorTagEnabled ? '' : 'opacity-50'
+              }`}
+            >
               <span className='text-[13px] text-text-dim'>@</span>
               <input
                 type='text'
                 placeholder='작가님 닉네임'
                 value={data.authorTag}
                 onChange={e => onChange({ ...data, authorTag: e.target.value })}
-                className='w-full bg-transparent text-[13px] text-text placeholder:text-text-dim/50 focus:outline-none'
+                disabled={!data.authorTagEnabled}
+                className='w-full bg-transparent text-[13px] text-text placeholder:text-text-dim/50 focus:outline-none disabled:cursor-not-allowed'
               />
             </div>
-          </label>
+          </div>
           <label className='flex flex-col gap-1 flex-1'>
-            <span className='text-[10px] font-semibold uppercase tracking-[0.1em] text-text-dim'>이미지 업로드</span>
+            <span className='text-[10px] font-semibold uppercase tracking-widest text-text-dim'>이미지 업로드</span>
             <input
               type='file'
               accept='image/*'
@@ -217,7 +233,7 @@ function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1 ${className}`}>
-      <span className='text-[10px] font-semibold uppercase tracking-[0.1em] text-text-dim'>{label}</span>
+      <span className='text-[10px] font-semibold uppercase tracking-widest text-text-dim'>{label}</span>
       <input
         type={type}
         placeholder={placeholder}

@@ -149,7 +149,7 @@ export function CanvasPreview({ data }: Props) {
             type='checkbox'
             checked={debug}
             onChange={e => setDebug(e.target.checked)}
-            className='accent-[var(--accent)]'
+            className='accent-accent'
           />
           디버그 (기준점/박스 표시)
         </label>

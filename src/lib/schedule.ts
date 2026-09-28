@@ -23,6 +23,7 @@ export interface ScheduleData {
   startDate: string; // ISO yyyy-mm-dd, 주 시작(월요일)
   /** 사용자가 시작 날짜를 직접 수정했는지 (false면 자동 계산값) */
   startDateTouched: boolean;
+  authorTagEnabled: boolean;
   authorTag: string;
   imageDataUrl: string | null;
   days: Record<DayKey, DayData>;
@@ -64,6 +65,7 @@ export function emptySchedule(): ScheduleData {
   return {
     startDate: nextMonday(),
     startDateTouched: false,
+    authorTagEnabled: true,
     authorTag: '',
     imageDataUrl: null,
     days,

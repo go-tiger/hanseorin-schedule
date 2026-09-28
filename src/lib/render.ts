@@ -54,7 +54,9 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
   const weekEndNode = findDayNumberLayer(psd.byPath, TEMPLATE.layers.weekEndGroup);
   if (weekStartNode) overridden.add(weekStartNode.path);
   if (weekEndNode) overridden.add(weekEndNode.path);
-  if (data.authorTag.trim()) overridden.add(TEMPLATE.layers.authorTag);
+  // 태그를 끄면 그룹 전체를 숨기고, 켜진 상태에서 닉네임을 입력하면 원본 텍스트를 덮는다.
+  const showAuthorTag = data.authorTagEnabled;
+  if (showAuthorTag && data.authorTag.trim()) overridden.add(TEMPLATE.layers.authorTag);
 
   const hasUserImage = !!(illust && data.imageDataUrl);
   const clipNode = psd.byPath.get(TEMPLATE.layers.illustClip);
@@ -70,6 +72,7 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
       skipIllustSlot: hasUserImage,
       illustBox,
       userImage: hasUserImage ? illust : null,
+      hideAuthorTag: !showAuthorTag,
     });
   }
 
@@ -90,7 +93,7 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug }: RenderO
 
   drawText(ctx, weekStartNode, nums.mon, debug);
   drawText(ctx, weekEndNode, nums.sun, debug);
-  if (data.authorTag.trim()) {
+  if (showAuthorTag && data.authorTag.trim()) {
     drawText(ctx, psd.byPath.get(TEMPLATE.layers.authorTag), `@ ${data.authorTag.trim()}`, debug);
   }
 }
@@ -101,9 +104,12 @@ interface PaintCtx {
   skipIllustSlot: boolean;
   illustBox: PsdLayerNode['bounds'] | null;
   userImage: HTMLImageElement | null;
+  hideAuthorTag: boolean;
 }
 
 function paintNode(ctx: CanvasRenderingContext2D, node: PsdLayerNode, pc: PaintCtx) {
+  if (pc.hideAuthorTag && node.path === TEMPLATE.layers.authorTagGroup) return;
+
   const isMonthLayer = /^주간날짜\/(시작|끝)\/월 표기\/\d+月$/.test(node.path);
   if (isMonthLayer) {
     if (!pc.visibleGroups.has(node.path)) return;

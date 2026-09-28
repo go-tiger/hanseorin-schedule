@@ -16,8 +16,9 @@ export default function Home() {
   const [data, setData] = useState<ScheduleData>(emptySchedule);
   const [hydrated, setHydrated] = useState(false);
 
-  // 마운트 후 복원 (hydration 불일치 방지)
+  // 정적 export라 localStorage는 마운트 후에만 읽을 수 있다 (hydration 불일치 방지).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setData(loadSchedule());
     setHydrated(true);
   }, []);

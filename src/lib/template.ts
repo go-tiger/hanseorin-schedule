@@ -121,6 +121,7 @@ export const TEMPLATE = {
     weekEndGroup: '주간날짜/끝',
     weekStartMonthGroup: '주간날짜/시작/월 표기',
     weekEndMonthGroup: '주간날짜/끝/월 표기',
+    authorTagGroup: '일러스트칸/팬아트 태그',
     authorTag: '일러스트칸/팬아트 태그/@ 작가님 닉네임',
     illustSlot: '일러스트칸/일러스트 대체용',
     illustClip: '일러스트칸/일러스트칸',

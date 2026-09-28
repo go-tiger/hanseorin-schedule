@@ -29,7 +29,7 @@ export function ExplorerPanel({ selectedId, onSelect, onReset }: Props) {
                     active ? 'bg-accent/12 text-text' : 'text-text-dim hover:bg-surface-raised hover:text-text'
                   }`}
                 >
-                  <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${active ? 'bg-accent' : 'bg-transparent'}`} />
+                  <span className={`h-3.5 w-0.75 shrink-0 rounded-full ${active ? 'bg-accent' : 'bg-transparent'}`} />
                   {node.day && <span className='font-display text-[11px] text-text-dim'>{DAY_HANJA[node.day]}</span>}
                   <span className='flex-1'>{node.label}</span>
                 </button>
