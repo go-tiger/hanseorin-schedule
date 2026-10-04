@@ -163,7 +163,7 @@ export function weekDayNumbers(startDate: string): Record<DayKey, string> {
   DAY_KEYS.forEach((k, i) => {
     const d = new Date(base);
     d.setDate(base.getDate() + i);
-    out[k] = String(d.getDate());
+    out[k] = String(d.getDate()).padStart(2, '0');
   });
   return out;
 }
