@@ -63,6 +63,8 @@ export default function Home() {
               onFontSizes={setFontSizes}
               onPatchDay={patchDay}
               onSelectDay={day => setSelectedId(`day:${day}`)}
+              onPatchData={patch => setData(d => ({ ...d, ...patch }))}
+              onSelectIllust={() => setSelectedId('illustration')}
             />
           </div>
         </main>

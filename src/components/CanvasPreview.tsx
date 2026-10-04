@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadPsd, type LoadedPsd } from '@/lib/psd';
 import { ensureFontsLoaded } from '@/lib/fonts';
-import { HANDLE_SIZE, hitHandle, hitTest, renderSchedule, type HitSlot } from '@/lib/render';
+import { HANDLE_SIZE, hitHandle, hitIllust, hitTest, illustBoxOf, renderSchedule, type HitSlot } from '@/lib/render';
 import { TEMPLATE, readDayFontSizes, type DayFontSizes } from '@/lib/template';
 import { weekLabel, type DayData, type ScheduleData } from '@/lib/schedule';
 import type { DayKey } from '@/lib/elements';
@@ -21,9 +21,16 @@ interface Props {
   onPatchDay?: (day: DayKey, patch: Partial<DayData>) => void;
   /** 미리보기에서 슬롯을 선택하면 편집 폼도 해당 요일로 옮긴다 */
   onSelectDay?: (day: DayKey) => void;
+  /** 미리보기에서 일러스트를 조작한 결과를 상위 상태에 반영 */
+  onPatchData?: (patch: Partial<ScheduleData>) => void;
+  /** 미리보기에서 일러스트를 누르면 편집 폼도 일러스트로 옮긴다 */
+  onSelectIllust?: () => void;
 }
 
-export function CanvasPreview({ data, onFontSizes, onPatchDay, onSelectDay }: Props) {
+const IMAGE_SCALE_MIN = 10;
+const IMAGE_SCALE_MAX = 400;
+
+export function CanvasPreview({ data, onFontSizes, onPatchDay, onSelectDay, onPatchData, onSelectIllust }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const psdRef = useRef<LoadedPsd | null>(null);
@@ -45,6 +52,8 @@ export function CanvasPreview({ data, onFontSizes, onPatchDay, onSelectDay }: Pr
     startY: number;
     origin: { dx: number; dy: number; width: number };
   } | null>(null);
+  // 일러스트 이미지 끌어 옮기기
+  const illustDragRef = useRef<{ startX: number; startY: number; dx: number; dy: number } | null>(null);
   // PSD 로드는 마운트 시 한 번만 하므로 콜백은 ref로 참조한다.
   const onFontSizesRef = useRef(onFontSizes);
   useEffect(() => {
@@ -130,8 +139,31 @@ export function CanvasPreview({ data, onFontSizes, onPatchDay, onSelectDay }: Pr
     img.src = data.imageDataUrl;
   }, [data.imageDataUrl]);
 
+  // 일러스트 위에서 휠을 굴리면 크기 조절. 페이지 스크롤을 막아야 해서 passive: false로 직접 등록한다.
+  const wheelRef = useRef<(e: WheelEvent) => void>(() => {});
+  useEffect(() => {
+    wheelRef.current = e => {
+      const psd = psdRef.current;
+      const box = psd && illustBoxOf(psd);
+      if (!box || !data.imageDataUrl) return;
+      const p = toPsdPoint(e);
+      if (!p || !hitIllust(box, p.x, p.y)) return;
+      e.preventDefault();
+      const factor = Math.exp(-e.deltaY * 0.001);
+      const next = Math.round(Math.min(IMAGE_SCALE_MAX, Math.max(IMAGE_SCALE_MIN, data.imageScale * factor)));
+      if (next !== data.imageScale) onPatchData?.({ imageScale: next });
+    };
+  });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const listener = (e: WheelEvent) => wheelRef.current(e);
+    canvas.addEventListener('wheel', listener, { passive: false });
+    return () => canvas.removeEventListener('wheel', listener);
+  }, []);
+
   /** 포인터 위치를 PSD 좌표로 변환 */
-  function toPsdPoint(e: React.PointerEvent | PointerEvent) {
+  function toPsdPoint(e: { clientX: number; clientY: number }) {
     const canvas = canvasRef.current;
     const psd = psdRef.current;
     if (!canvas || !psd) return null;
@@ -178,6 +210,13 @@ export function CanvasPreview({ data, onFontSizes, onPatchDay, onSelectDay }: Pr
     const hit = [...hitsRef.current].reverse().find(h => hitTest(h.box, p.x, p.y));
     if (!hit) {
       setSelected(null);
+      const psd = psdRef.current;
+      const box = psd && illustBoxOf(psd);
+      if (box && data.imageDataUrl && hitIllust(box, p.x, p.y)) {
+        onSelectIllust?.();
+        illustDragRef.current = { startX: p.x, startY: p.y, dx: data.imageDx, dy: data.imageDy };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
       return;
     }
     const slot: SlotRef = { day: hit.day, field: hit.field };
@@ -198,13 +237,25 @@ export function CanvasPreview({ data, onFontSizes, onPatchDay, onSelectDay }: Pr
     const p = toPsdPoint(e);
     if (!p) return;
 
+    const illustDrag = illustDragRef.current;
+    if (illustDrag) {
+      onPatchData?.({
+        imageDx: Math.round(illustDrag.dx + (p.x - illustDrag.startX)),
+        imageDy: Math.round(illustDrag.dy + (p.y - illustDrag.startY)),
+      });
+      return;
+    }
+
     if (!drag) {
       // 핸들 위에서는 커서를 바꿔 조작 가능함을 알린다.
       const cur = selected && hitsRef.current.find(h => h.day === selected.day && h.field === selected.field);
       const tol = (HANDLE_SIZE / 2 + 3) * p.unit;
       const overHandle = cur && hitHandle(cur.box, p.x, p.y, tol);
       const overText = hitsRef.current.some(h => hitTest(h.box, p.x, p.y));
-      e.currentTarget.style.cursor = overHandle ? 'ew-resize' : overText ? 'move' : 'default';
+      const psd = psdRef.current;
+      const box = psd && illustBoxOf(psd);
+      const overIllust = !!(box && data.imageDataUrl && hitIllust(box, p.x, p.y));
+      e.currentTarget.style.cursor = overHandle ? 'ew-resize' : overText || overIllust ? 'move' : 'default';
       return;
     }
 
@@ -225,8 +276,9 @@ export function CanvasPreview({ data, onFontSizes, onPatchDay, onSelectDay }: Pr
   }
 
   function endDrag(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!dragRef.current) return;
+    if (!dragRef.current && !illustDragRef.current) return;
     dragRef.current = null;
+    illustDragRef.current = null;
     e.currentTarget.releasePointerCapture(e.pointerId);
   }
 

@@ -43,6 +43,21 @@ interface RenderOpts {
   selected?: { day: DayKey; field: 'title' | 'desc' } | null;
 }
 
+/** 일러스트 칸(타원 마스크)의 경계 박스 */
+export function illustBoxOf(psd: LoadedPsd): PsdLayerNode['bounds'] | null {
+  const clipNode = psd.byPath.get(TEMPLATE.layers.illustClip);
+  return clipNode?.maskBounds ?? clipNode?.bounds ?? null;
+}
+
+/** 점이 일러스트 타원 안에 있는지 */
+export function hitIllust(box: PsdLayerNode['bounds'], x: number, y: number): boolean {
+  const rx = box.width / 2;
+  const ry = box.height / 2;
+  const nx = (x - (box.left + rx)) / rx;
+  const ny = (y - (box.top + ry)) / ry;
+  return nx * nx + ny * ny <= 1;
+}
+
 /** 그린 뒤 클릭 가능한 슬롯 목록을 돌려준다 (히트 테스트용) */
 export function renderSchedule({ ctx, psd, data, illust, scale, debug, selected }: RenderOpts): HitSlot[] {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -82,8 +97,7 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug, selected 
   if (showAuthorTag && data.authorTag.trim()) overridden.add(TEMPLATE.layers.authorTag);
 
   const hasUserImage = !!(illust && data.imageDataUrl);
-  const clipNode = psd.byPath.get(TEMPLATE.layers.illustClip);
-  const illustBox = clipNode?.maskBounds ?? clipNode?.bounds ?? null;
+  const illustBox = illustBoxOf(psd);
 
   // 1) 레이어 합성
   // 일러스트 자리 표시자는 타원 마스크로 클리핑. 사용자 이미지가 있으면
