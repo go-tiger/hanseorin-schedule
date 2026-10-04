@@ -95,6 +95,7 @@ export function renderSchedule({ ctx, psd, data, illust, scale, debug, selected 
       skipIllustSlot: hasUserImage,
       illustBox,
       userImage: hasUserImage ? illust : null,
+      imageTransform: { scale: data.imageScale / 100, dx: data.imageDx, dy: data.imageDy },
       hideAuthorTag: !showAuthorTag,
     });
   }
@@ -152,6 +153,7 @@ interface PaintCtx {
   visibleGroups: Set<string>;
   skipIllustSlot: boolean;
   illustBox: PsdLayerNode['bounds'] | null;
+  imageTransform: ImageTransform;
   userImage: HTMLImageElement | null;
   hideAuthorTag: boolean;
 }
@@ -172,7 +174,7 @@ function paintNode(ctx: CanvasRenderingContext2D, node: PsdLayerNode, pc: PaintC
   const isIllustSlot = node.path === TEMPLATE.layers.illustSlot;
   if (isIllustSlot && pc.skipIllustSlot) {
     if (pc.userImage && pc.illustBox) {
-      drawIllustration(ctx, pc.illustBox, pc.userImage);
+      drawIllustration(ctx, pc.illustBox, pc.userImage, pc.imageTransform);
     }
     return;
   }
@@ -380,15 +382,26 @@ function markPoint(ctx: CanvasRenderingContext2D, x: number, y: number, b: PsdLa
   ctx.strokeRect(b.left, b.top, b.width, b.height);
 }
 
-function drawIllustration(ctx: CanvasRenderingContext2D, box: PsdLayerNode['bounds'], img: HTMLImageElement) {
+interface ImageTransform {
+  scale: number;
+  dx: number;
+  dy: number;
+}
+
+function drawIllustration(
+  ctx: CanvasRenderingContext2D,
+  box: PsdLayerNode['bounds'],
+  img: HTMLImageElement,
+  t: ImageTransform,
+) {
   const { left: x, top: y, width: w, height: h } = box;
   ctx.save();
   ctx.beginPath();
   ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
   ctx.clip();
-  const s = Math.max(w / img.width, h / img.height);
+  const s = Math.max(w / img.width, h / img.height) * (t.scale > 0 ? t.scale : 1);
   const dw = img.width * s;
   const dh = img.height * s;
-  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  ctx.drawImage(img, x + (w - dw) / 2 + t.dx, y + (h - dh) / 2 + t.dy, dw, dh);
   ctx.restore();
 }

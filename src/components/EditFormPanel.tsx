@@ -256,15 +256,72 @@ export function EditFormPanel({ selectedId, data, onChange, fontSizes }: Props) 
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = () => {
-                  onChange({ ...data, imageDataUrl: String(reader.result) });
+                  onChange({ ...data, imageDataUrl: String(reader.result), imageScale: 100, imageDx: 0, imageDy: 0 });
                 };
                 reader.readAsDataURL(file);
               }}
             />
           </label>
+          {data.imageDataUrl && (
+            <div className='flex w-full flex-wrap items-end gap-3.5'>
+              <ImageNumber label='크기 (%)' min={10} max={400} step={5} value={data.imageScale} onChange={v => onChange({ ...data, imageScale: v })} />
+              <ImageNumber label='가로 위치 (px)' min={-1000} max={1000} step={1} value={data.imageDx} onChange={v => onChange({ ...data, imageDx: v })} />
+              <ImageNumber label='세로 위치 (px)' min={-1000} max={1000} step={1} value={data.imageDy} onChange={v => onChange({ ...data, imageDy: v })} />
+              <button
+                type='button'
+                className='rounded border border-line px-2.5 py-1.5 text-[13px] text-text-dim hover:border-accent hover:text-accent'
+                onClick={() => onChange({ ...data, imageScale: 100, imageDx: 0, imageDy: 0 })}
+              >
+                원래대로
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function ImageNumber({
+  label,
+  min,
+  max,
+  step,
+  value,
+  onChange,
+}: {
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <label className='flex min-w-48 flex-1 flex-col gap-1'>
+      <span className='text-[10px] font-semibold uppercase tracking-widest text-text-dim'>{label}</span>
+      <div className='flex items-center gap-2'>
+        <input
+          type='range'
+          className='flex-1 accent-accent'
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+        />
+        <input
+          type='number'
+          className='w-16 rounded border border-line bg-surface-raised px-1.5 py-1 text-[13px] text-text focus:border-accent focus:outline-none'
+          step={step}
+          value={value}
+          onChange={e => {
+            const n = Number(e.target.value);
+            if (Number.isFinite(n)) onChange(n);
+          }}
+        />
+      </div>
+    </label>
   );
 }
 

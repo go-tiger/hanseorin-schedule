@@ -40,6 +40,11 @@ export interface ScheduleData {
   authorTagEnabled: boolean;
   authorTag: string;
   imageDataUrl: string | null;
+  /** 일러스트 확대 배율 (%, 100 = 칸을 꽉 채우는 기본 크기) */
+  imageScale: number;
+  /** 일러스트 위치 오프셋 (PSD px, 0이면 가운데) */
+  imageDx: number;
+  imageDy: number;
   days: Record<DayKey, DayData>;
 }
 
@@ -90,6 +95,9 @@ export function emptySchedule(): ScheduleData {
     authorTagEnabled: true,
     authorTag: '',
     imageDataUrl: null,
+    imageScale: 100,
+    imageDx: 0,
+    imageDy: 0,
     days,
   };
 }
